@@ -25,19 +25,19 @@ contract AppRegistry is RiskTokenLockRegistry {
     mapping(bytes32 => address) public addressOf;
 
     event AppRegister(bytes32 appId, address appAddress);
- 
+
     /**
      * @param token The address of token for stake.
-     * @param penaltyBeneficiary The destination wallet that stake losses are transferred to.  
+     * @param penaltyBeneficiary The destination wallet that stake losses are transferred to.
      */
-    constructor(ERC20 token, address penaltyBeneficiary, address punisher) 
+    constructor(ERC20 token, address penaltyBeneficiary, address punisher)
         RiskTokenLockRegistry(token, penaltyBeneficiary, punisher)
         public
     {
     }
 
     /**
-     * @param appId ID of off-chain app metadata. 
+     * @param appId ID of off-chain app metadata.
      */
     function register(bytes32 appId) public {
         apps[msg.sender] = App(appId, 0);
