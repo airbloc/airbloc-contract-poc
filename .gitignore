@@ -94,3 +94,5 @@ build/**
 
 
 # End of https://www.gitignore.io/api/osx,solidity
+
+truffle-config.js

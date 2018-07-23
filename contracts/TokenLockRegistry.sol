@@ -15,7 +15,7 @@ contract TokenLockRegistry is RBAC {
     // ERC20 token contract being held
     ERC20 public token;
 
-    // amount of locked ERC20 balances per user 
+    // amount of locked ERC20 balances per user
     mapping(address => uint256) public lockedBalanceOf;
 
     constructor(ERC20 _token) public {

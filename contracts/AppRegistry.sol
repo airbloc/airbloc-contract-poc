@@ -11,79 +11,105 @@ import "./RiskTokenLockRegistry.sol";
  * then there's a risk for app can LOSE some amount of it's stake.
  */
 contract AppRegistry is RiskTokenLockRegistry {
+    using AddressUtils for address;
     using SafeMath for uint256;
 
     // Basic App info for minimum proof. Rest of the data is available on off-chain.
     // TODO: Privacy considerations
     struct App {
-        bytes32 id;
+        address owner;
         uint256 userCount;
-        mapping(address => bool) users;
+        mapping(bytes32 => address) users;
     }
 
-    mapping(address => App) public apps;
-    mapping(bytes32 => address) public addressOf;
+    address public receiver;
 
-    event AppRegister(bytes32 appId, address appAddress);
+    mapping(bytes32 => App) public apps;
+
+    event AppRegistered(bytes32 appId, address appAddress);
+    event AppUnregistered(bytes32 appId, address appAddress);
 
     /**
      * @param token The address of token for stake.
      * @param penaltyBeneficiary The destination wallet that stake losses are transferred to.
      */
-    constructor(ERC20 token, address penaltyBeneficiary, address punisher)
+    constructor(
+        ERC20 token,
+        address penaltyBeneficiary,
+        address punisher,
+        address defaultReceiver
+    )
         RiskTokenLockRegistry(token, penaltyBeneficiary, punisher)
         public
     {
+        require(defaultReceiver != address(0));
+        receiver = defaultReceiver;
     }
 
     /**
      * @param appId ID of off-chain app metadata.
      */
     function register(bytes32 appId) public {
-        apps[msg.sender] = App(appId, 0);
-        addressOf[appId] = msg.sender;
-        emit AppRegister(appId, msg.sender);
+        apps[appId] = App(msg.sender, 0);
+        emit AppRegistered(appId, msg.sender);
+    }
+
+    function unregister(bytes32 appId) public {
+        require(hasAppOf(msg.sender), "App not found.");
+        require(addressOf[appId] == msg.sender, "Only owner of app can unregister");
+        delete apps[msg.sender];
+        delete addressOf[appId];
+        withdraw(stakeOf(msg.sender));
+        emit AppUnregistered(appId, msg.sender);
     }
 
     /**
      * Add user to app.
      */
-    function addUser(address[] addedUsers) public {
+    function addUser(bytes32[] ids) public {
         require(hasAppOf(msg.sender), "App not found.");
         require(
-            stakeOf(msg.sender) >= getRequiredStake(apps[msg.sender].userCount + addedUsers.length),
+            stakeOf(msg.sender) >= getRequiredStake(apps[msg.sender].userCount + ids.length),
             "Insufficient stake amount."
         );
         App app = apps[msg.sender];
 
-        for (uint256 i = 0; i < addedUsers.length; i++) {
-            app.users[addedUsers[i]] = true;
+        for (uint256 i = 0; i < ids.length; i++) {
+            app.users[ids[i]] = receiver;
         }
-        app.userCount = app.userCount.add(addedUsers.length);
+        app.userCount = app.userCount.add(ids.length);
     }
 
-    function removeUser(address[] removedUsers) public {
+    function removeUser(bytes32[] ids) public {
         require(hasAppOf(msg.sender), "App not found.");
         App app = apps[msg.sender];
 
-        for (uint256 i = 0; i < removedUsers.length; i++) {
-            app.users[removedUsers[i]] = false;
+        for (uint256 i = 0; i < ids.length; i++) {
+            delete app.users[ids[i]];
         }
-        app.userCount = app.userCount.sub(removedUsers.length);
+        app.userCount = app.userCount.sub(ids.length);
     }
 
-    function withdraw(uint256 amount) public {
-        require(hasAppOf(msg.sender), "App not found.");
-        require(stakeOf(msg.sender) - amount >= getRequiredStake(apps[msg.sender].userCount));
+    // @Override TokenLockRegistry
+    function withdraw(bytes32 appId, uint256 amount) public {
+        require(hasAppOf(appId), "App not found.");
+        require(
+            stakeOf(msg.sender) - amount >= getRequiredStake(apps[msg.sender].userCount),
+            ""
+        );
         super.withdraw(amount);
     }
 
-    function hasAppOf(address addr) internal view returns (bool) {
-        return apps[addr].id != bytes32(0x0);
+    function isOwner(bytes32 appId) internal view returns (bool) {
+        return apps[appId].owner == msg.sender;
     }
 
-    function hasUser(bytes32 appId, address user) public view returns (bool) {
-        return apps[addressOf[appId]].users[user];
+    function hasAppOf(bytes32 appId) internal view returns (bool) {
+        return apps[appId] != bytes32(0);
+    }
+
+    function hasUser(bytes32 appId, bytes32 userId) public view returns (bool) {
+        return apps[appId].users[userId];
     }
 
     function getRequiredStake(uint256 userCount) public pure returns (uint256) {
