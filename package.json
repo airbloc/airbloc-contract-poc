@@ -37,10 +37,6 @@
     "devDependencies": {
         "chai": "^4.1.2",
         "chai-as-promised": "^7.1.1",
-        "chai-bignumber": "^2.0.2",
-        "solium": "^1.1.7",
-        "truffle-hdwallet-provider": "0.0.3",
-        "truffle-hdwallet-provider-privkey": "git+https://github.com/rhlsthrm/truffle-hdwallet-provider-privkey.git",
-        "truffle-ledger-provider": "0.0.1"
+        "chai-bignumber": "^2.0.2"
     }
 }
