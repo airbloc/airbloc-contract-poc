@@ -5,13 +5,16 @@ pragma solidity ^0.4.23;
  */
 contract AuthRegistry {
     // only store boolean value whether the user authorized Auth rule.
-    mapping(address => mapping(bytes32 => bool[])) private registry;
+    // @address user's address
+    // @bytes32 categoryOfApp Id
+    // @bool    authorization
+    mapping(address => mapping(bytes32 => bool)) private registry;
 
-    function register(bytes32 ruleId, bool[] authorizations) public {
-        registry[msg.sender][ruleId] = authorizations;
+    function register(bytes32 categoryOfAppId, bool authorizations) public {
+        registry[msg.sender][categoryOfAppId] = authorizations;
     }
 
-    function getAuthorizations(bytes32 ruleId) public view returns (bool[]) {
-        return registry[msg.sender][ruleId];
+    function getAuthorizations(bytes32 categoryOfAppId) public view returns (bool) {
+        return registry[msg.sender][categoryOfAppId];
     }
 }
