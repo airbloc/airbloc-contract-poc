@@ -2,7 +2,7 @@ pragma solidity ^0.4.23;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract DataCategoryRegistry is Ownable{
+contract DataCategory is Ownable{
     struct Category {
         string name;
         string icon;
@@ -29,14 +29,5 @@ contract DataCategoryRegistry is Ownable{
 
     function validate(bytes32 id) public view returns (bool) {
         return categories[id].isValid;
-    }
-
-    function validateMany(bytes32[] ids) public view returns (bool) {
-        for (uint256 i = 0; i < ids.length; i++) {
-            if(!validate(ids[i])) {
-                return false;
-            }
-        }
-        return true;
     }
 }

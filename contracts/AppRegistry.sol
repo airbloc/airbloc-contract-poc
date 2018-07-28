@@ -2,9 +2,8 @@ pragma solidity ^0.4.23;
 
 import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 
-import "./RiskTokenLockRegistry.sol";
 import "./App.sol";
-import "./AirContainer.sol";
+import "./DataCategory.sol";
 
 /**
  * AppRegistry stores an app information, and user IDs of the app.
@@ -18,7 +17,10 @@ contract AppRegistry {
     using SafeMath for uint256;
 
     ERC20 token;
-    AirContainer public receiver;
+    address receiver;
+    address punisher;
+
+    DataCategory dataCtg;
     mapping(bytes32 => App) public apps;
 
     event AppRegistered(bytes32 appId, address owner);
@@ -30,19 +32,21 @@ contract AppRegistry {
      */
     constructor(
         ERC20 _token,
-        address penaltyBeneficiary,
-        address punisher,
-        AirContainer _receiver
+        address _receiver,
+        address _punisher,
+        DataCategory _dataCtg
     ) public {
         token = _token;
         receiver = _receiver;
+        punisher = _punisher;
+        dataCtg = _dataCtg;
     }
 
     /**
      * @param appId ID of off-chain app metadata.
      */
     function register(bytes32 appId) public {
-        apps[appId] = new App(token, receiver);
+        apps[appId] = new App(token, receiver, punisher, dataCtg);
         emit AppRegistered(appId, msg.sender);
     }
 
@@ -56,11 +60,11 @@ contract AppRegistry {
         emit AppUnregistered(appId, msg.sender);
     }
 
-    function hasAppOf(bytes32 appId)
-        internal
-        view
-        returns (bool)
-    {
+    function isAppOwner(bytes32 appId, address addr) public view returns (bool) {
+        return apps[appId].owner() == addr;
+    }
+
+    function hasAppOf(bytes32 appId) public view returns (bool) {
         return apps[appId].token() != address(0);
     }
 }
