@@ -31,11 +31,11 @@ contract Stake is Ownable {
      * @param amount {uint256} you want to unstake
      */
     function withdraw(uint256 amount) public {
-        require(amount <= stakeOf(msg.sender));
+        require(amount <= stake());
         token.safeTransfer(msg.sender, amount);
     }
 
-    function stakeOf(address addr) public view returns (uint256) {
+    function stake() public view returns (uint256) {
         return token.balanceOf(address(this));
     }
 }

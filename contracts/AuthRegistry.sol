@@ -10,6 +10,7 @@ contract AuthRegistry {
     // @bool    authorization
     mapping(address => mapping(bytes32 => bool)) private registry;
 
+    // TODO: validate categoryOfAppId and rebuild the category structure (category - app - category of app)
     function register(bytes32 categoryOfAppId, bool authorizations) public {
         registry[msg.sender][categoryOfAppId] = authorizations;
     }
