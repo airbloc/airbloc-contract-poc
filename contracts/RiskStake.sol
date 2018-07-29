@@ -1,9 +1,6 @@
 pragma solidity ^0.4.23;
 
 import "./Stake.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 contract RiskStake is Stake {

@@ -3,7 +3,6 @@ pragma solidity ^0.4.23;
 import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 
 import "./App.sol";
-import "./DataCategory.sol";
 
 /**
  * AppRegistry stores an app information, and user IDs of the app.
@@ -26,10 +25,6 @@ contract AppRegistry {
     event AppRegistered(bytes32 appId, address owner);
     event AppUnregistered(bytes32 appId, address owner);
 
-    /**
-     * @param token The address of token for stake.
-     * @param penaltyBeneficiary The destination wallet that stake losses are transferred to.
-     */
     constructor(
         ERC20 _token,
         address _receiver,
@@ -42,22 +37,21 @@ contract AppRegistry {
         dataCtg = _dataCtg;
     }
 
-    /**
-     * @param appId ID of off-chain app metadata.
-     */
     function register(bytes32 appId) public {
         apps[appId] = new App(token, receiver, punisher, dataCtg);
         emit AppRegistered(appId, msg.sender);
     }
 
     function unregister(bytes32 appId) public {
-        App app = apps[appId];
-
         require(hasAppOf(appId), "App not found.");
-        require(app.owner() == msg.sender, "Only app owner can do this.");
+        require(isAppOwner(appId, msg.sender), "Only app owner can do this.");
 
         delete apps[appId];
         emit AppUnregistered(appId, msg.sender);
+    }
+
+    function validateCategories(bytes32 appId, bytes32[] ids) public view returns (bool) {
+        return apps[appId].validateCategories(ids);
     }
 
     function isAppOwner(bytes32 appId, address addr) public view returns (bool) {

@@ -20,10 +20,10 @@ contract Stake is Ownable {
      * Stake and lock your token.
      * @param amount {uint256} you want to stake
      */
-    function deposit(uint256 amounut) public {
-        require(token.allowance(msg.sender, address(this)) >= amounut);
-        require(token.balanceOf(msg.sender) >= amounut);
-        token.safeTransferFrom(msg.sender, address(this), amounut);
+    function deposit(uint256 amount) public {
+        require(token.allowance(msg.sender, address(this)) >= amount);
+        require(token.balanceOf(msg.sender) >= amount);
+        token.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /**

@@ -61,7 +61,7 @@ contract App is RiskStake {
         emit CategoryRemoved(id);
     }
 
-    function validate(bytes32 id) private view returns (bool) {
+    function validate(bytes32 id) public view returns (bool) {
         return ctgOfApps[id].isValid;
     }
 
@@ -133,7 +133,7 @@ contract App is RiskStake {
 
     function getRequiredStake(uint256 _add)
         public
-        pure
+        view
         returns (uint256)
     {
         return userCount + _add; // TODO: Add algorithm about staking amount

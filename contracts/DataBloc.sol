@@ -1,10 +1,11 @@
 pragma solidity ^0.4.23;
 
-import "./AccessControlList.sol";
-import "./AppRegistry.sol";
+import "./AirContainer.sol";
 
 // TODO: build data exchange
 contract DataBloc {
+    using SafeMath for uint256;
+    using SafeERC20 for ERC20;
 
     event DataRegistered(bytes32 dataId);
     event DataUnregistered(bytes32 dataId);
@@ -19,14 +20,16 @@ contract DataBloc {
         bool      isValid;
     }
 
+    ERC20 token;
     AppRegistry appReg;
+    AirContainer container;
 
     mapping (bytes32=>Data) offerings;
 
-    constructor(    
-        AppRegistry _appReg
-    ) public {
-        appReg = _appReg;
+    constructor(AirContainer _container) public {
+        container = _container;
+        token = _container.token();
+        appReg = _container.appReg();
     }
 
     function registerOffering(
@@ -34,15 +37,15 @@ contract DataBloc {
         bytes32   appId,
         bytes32[] categoryIds,
         uint256   price, 
-        uint256   beneficiaryCount
+        uint256   beneficiaries
     ) public {
         require(price > 0, "Price can not be zero.");
         require(!hasDataOf(dataId), "Data already registered.");
         require(appReg.hasAppOf(appId), "Invalid app id.");
         require(appReg.isAppOwner(appId, msg.sender), "Sender is not owner of app");
-        require(appReg.apps[appId].validateCategories(categoryIds), "Invalid data category.");
+        require(appReg.validateCategories(appId, categoryIds), "Invalid data category.");
 
-        offerings[dataId] = Data(appId, categoryIds, price, beneficiaryCount, 0);
+        offerings[dataId] = Data(appId, categoryIds, price, beneficiaries, 0, true);
         emit DataRegistered(dataId);
     }
 
@@ -54,10 +57,16 @@ contract DataBloc {
         emit DataUnregistered(dataId);
     }
 
-    // TODO: change to purchase right of data
-    // TODO: get token and send to reward container
+    // TODO: change to purchase right of data (linked to ACL(Access Control List))
     function purchase(bytes32 dataId) public {
         require(hasDataOf(dataId), "Data is not available.");
+        Data memory data = offerings[dataId];
+
+        require(token.allowance(msg.sender, address(this)) >= data.price);
+        require(token.balanceOf(msg.sender) >= data.price);
+        token.safeTransferFrom(msg.sender, address(container), data.price);
+
+        container.deposit(data.appId, dataId, data.price);
         offerings[dataId].purchases.add(1);
         emit DataPurchased(dataId, msg.sender);
     }
