@@ -1,7 +1,8 @@
 pragma solidity ^0.4.23;
 
-import "openzeppelin-solidity/contracts/examples/SimpleToken.sol";
-import "./RiskTokenLockRegistry.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
+
+import "./App.sol";
 
 /**
  * AppRegistry stores an app information, and user IDs of the app.
@@ -10,83 +11,54 @@ import "./RiskTokenLockRegistry.sol";
  * If an app did some bad things that prohibited by Airbloc Protocol's Law,
  * then there's a risk for app can LOSE some amount of it's stake.
  */
-contract AppRegistry is RiskTokenLockRegistry {
+contract AppRegistry {
+    using AddressUtils for address;
     using SafeMath for uint256;
 
-    // Basic App info for minimum proof. Rest of the data is available on off-chain.
-    // TODO: Privacy considerations
-    struct App {
-        bytes32 id;
-        uint256 userCount;
-        mapping(address => bool) users;
+    ERC20 token;
+    address receiver;
+    PunisherRegistry punReg;
+
+    DataCategory dataCtg;
+    mapping(bytes32 => App) public apps;
+
+    event AppRegistered(bytes32 appId, address owner);
+    event AppUnregistered(bytes32 appId, address owner);
+
+    constructor(
+        ERC20 _token,
+        address _receiver,
+        PunisherRegistry _punReg,
+        DataCategory _dataCtg
+    ) public {
+        token = _token;
+        receiver = _receiver;
+        punReg = _punReg;
+        dataCtg = _dataCtg;
     }
 
-    mapping(address => App) public apps;
-    mapping(bytes32 => address) public addressOf;
-
-    event AppRegister(bytes32 appId, address appAddress);
- 
-    /**
-     * @param token The address of token for stake.
-     * @param penaltyBeneficiary The destination wallet that stake losses are transferred to.  
-     */
-    constructor(ERC20 token, address penaltyBeneficiary, address punisher) 
-        RiskTokenLockRegistry(token, penaltyBeneficiary, punisher)
-        public
-    {
-    }
-
-    /**
-     * @param appId ID of off-chain app metadata. 
-     */
     function register(bytes32 appId) public {
-        apps[msg.sender] = App(appId, 0);
-        addressOf[appId] = msg.sender;
-        emit AppRegister(appId, msg.sender);
+        apps[appId] = new App(token, receiver, punReg, dataCtg);
+        emit AppRegistered(appId, msg.sender);
     }
 
-    /**
-     * Add user to app.
-     */
-    function addUser(address[] addedUsers) public {
-        require(hasAppOf(msg.sender), "App not found.");
-        require(
-            stakeOf(msg.sender) >= getRequiredStake(apps[msg.sender].userCount + addedUsers.length),
-            "Insufficient stake amount."
-        );
-        App app = apps[msg.sender];
+    function unregister(bytes32 appId) public {
+        require(hasAppOf(appId), "App not found.");
+        require(isAppOwner(appId, msg.sender), "Only app owner can do this.");
 
-        for (uint256 i = 0; i < addedUsers.length; i++) {
-            app.users[addedUsers[i]] = true;
-        }
-        app.userCount = app.userCount.add(addedUsers.length);
+        delete apps[appId];
+        emit AppUnregistered(appId, msg.sender);
     }
 
-    function removeUser(address[] removedUsers) public {
-        require(hasAppOf(msg.sender), "App not found.");
-        App app = apps[msg.sender];
-
-        for (uint256 i = 0; i < removedUsers.length; i++) {
-            app.users[removedUsers[i]] = false;
-        }
-        app.userCount = app.userCount.sub(removedUsers.length);
+    function validateCategories(bytes32 appId, bytes32[] ids) public view returns (bool) {
+        return apps[appId].validateCategories(ids);
     }
 
-    function withdraw(uint256 amount) public {
-        require(hasAppOf(msg.sender), "App not found.");
-        require(stakeOf(msg.sender) - amount >= getRequiredStake(apps[msg.sender].userCount));
-        super.withdraw(amount);
+    function isAppOwner(bytes32 appId, address addr) public view returns (bool) {
+        return apps[appId].owner() == addr;
     }
 
-    function hasAppOf(address addr) internal view returns (bool) {
-        return apps[addr].id != bytes32(0x0);
-    }
-
-    function hasUser(bytes32 appId, address user) public view returns (bool) {
-        return apps[addressOf[appId]].users[user];
-    }
-
-    function getRequiredStake(uint256 userCount) public pure returns (uint256) {
-        return userCount;
+    function hasAppOf(bytes32 appId) public view returns (bool) {
+        return apps[appId].token() != address(0);
     }
 }
