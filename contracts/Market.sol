@@ -3,7 +3,7 @@ pragma solidity ^0.4.23;
 import "./AirContainer.sol";
 
 // TODO: build data exchange
-contract DataBloc {
+contract Market {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 

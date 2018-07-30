@@ -17,7 +17,7 @@ contract AppRegistry {
 
     ERC20 token;
     address receiver;
-    address punisher;
+    PunisherRegistry punReg;
 
     DataCategory dataCtg;
     mapping(bytes32 => App) public apps;
@@ -28,17 +28,17 @@ contract AppRegistry {
     constructor(
         ERC20 _token,
         address _receiver,
-        address _punisher,
+        PunisherRegistry _punReg,
         DataCategory _dataCtg
     ) public {
         token = _token;
         receiver = _receiver;
-        punisher = _punisher;
+        punReg = _punReg;
         dataCtg = _dataCtg;
     }
 
     function register(bytes32 appId) public {
-        apps[appId] = new App(token, receiver, punisher, dataCtg);
+        apps[appId] = new App(token, receiver, punReg, dataCtg);
         emit AppRegistered(appId, msg.sender);
     }
 
