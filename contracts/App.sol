@@ -31,10 +31,10 @@ contract App is RiskStake {
     constructor(
         ERC20 _token, 
         address _receiver, 
-        address _punisher,
+        PunisherRegistry _punReg,
         DataCategory _dataCtg
     ) 
-        RiskStake(_token, _receiver, _punisher)
+        RiskStake(_token, _receiver, _punReg)
         public
     {
         userCount = 0;
